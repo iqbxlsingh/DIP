@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dip Book</title>
+<style>
+:root{
+  --bg:#EEF1EC; --card:#FAFBF8; --ink:#16222B; --muted:#5E6B72; --line:#C9D1C6;
+  --accent:#0F5C6E; --accent-ink:#fff; --loss:#B3341F; --gain:#1D6B3A; --calc:#E4EBE4;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#12181C; --card:#1A2227; --ink:#E6ECEA; --muted:#97A5AB; --line:#2D3A40;
+    --accent:#5BB6C9; --accent-ink:#0B1317; --loss:#FF8A75; --gain:#7FD19A; --calc:#222D33;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Avenir Next","Segoe UI",system-ui,sans-serif;line-height:1.4;font-variant-numeric:tabular-nums}
+main{max-width:720px;margin:0 auto;padding:16px 14px 80px}
+h1{font-size:1.6rem;margin:0;letter-spacing:-.01em}
+h2{font-size:1.15rem;margin:0 0 4px}
+.sub{color:var(--muted);font-size:.9rem;margin:2px 0 12px}
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+section{margin-top:22px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px}
+.card h3{margin:0 0 8px;font-size:1rem;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.sold{font-weight:700;color:var(--accent)}
+input{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:9px 8px;width:100%;min-width:0}
+input:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+.prow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;align-items:center;margin-bottom:6px}
+.prow.head{font-size:.75rem;color:var(--muted);margin-bottom:2px}
+.prow .out{text-align:right;font-weight:600;padding-right:2px}
+.x{border:0;background:none;color:var(--muted);font-size:1.2rem;cursor:pointer;padding:0}
+button.btn{font:inherit;font-weight:600;border-radius:8px;border:1px solid var(--accent);background:transparent;color:var(--accent);padding:9px 14px;cursor:pointer}
+button.btn.primary{background:var(--accent);color:var(--accent-ink)}
+button.btn.small{padding:5px 10px;font-size:.85rem}
+.adj{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:.85rem;color:var(--muted)}
+.adj input{max-width:130px}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+th,td{border-bottom:1px solid var(--line);padding:6px;text-align:right;font-size:.95rem}
+th{font-size:.85rem;background:var(--calc)}
+th:first-child,td:first-child{text-align:left;width:38%}
+td.calc{background:var(--calc);font-weight:600}
+td small{display:block;color:var(--muted);font-weight:400;font-size:.72rem}
+td input{padding:7px 5px;text-align:right}
+tr.key td{font-weight:700}
+.neg{color:var(--loss)} .pos{color:var(--gain)}
+input.auto{background:var(--calc);font-weight:600}
+input.edited{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+input.neg{color:var(--loss)} input.pos{color:var(--gain)}
+.blend{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.blend label{font-size:.85rem;color:var(--muted)}
+.mix td,.mix th{font-size:.9rem}
+.note{font-size:.85rem;margin:8px 2px;color:var(--loss);font-weight:600}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+pre{white-space:pre-wrap;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px;font-size:.85rem}
+</style>
+</head>
+<body>
+<main>
+<header><h1>Dip Book</h1></header>
+
+<section>
+  <h2>1. Pump Meter Readings</h2>
+  <div id="pumps"></div>
+</section>
+
+<section>
+  <h2>2. Sales After Blend Split</h2>
+  <div class="blend card">
+    <div><label for="bPlus">Midgrade: % Ultra 94</label><input id="bPlus" inputmode="decimal"></div>
+    <div><label for="bSuper">Super Clean 91: % Ultra 94</label><input id="bSuper" inputmode="decimal"></div>
+  </div>
+  <table class="mix">
+    <thead><tr><th>Grade</th><th>Litres</th></tr></thead>
+    <tbody id="mix"><tr><td>Ultra 94</td><td><input class="auto" data-ov="grand-ultra" aria-label="Ultra 94 grand total" inputmode="text" autocomplete="off"></td></tr><tr><td>Regular (E-10)</td><td><input class="auto" data-ov="grand-regular" aria-label="Regular grand total" inputmode="text" autocomplete="off"></td></tr><tr><td>Diesel</td><td><input class="auto" data-ov="grand-diesel" aria-label="Diesel grand total" inputmode="text" autocomplete="off"></td></tr></tbody>
+  </table>
+</section>
+
+<section>
+  <h2>3. Tank Reconciliation</h2>
+  <table>
+    <thead><tr><th>Line</th><th>Ultra 94</th><th>Regular</th><th>Diesel</th></tr></thead>
+    <tbody id="tank"></tbody>
+  </table>
+  <div id="warn"></div>
+</section>
+
+<div class="bar">
+  <button class="btn primary" id="report">Summary</button>
+  <button class="btn" id="reset">Clear All</button>
+</div>
+<pre id="out" hidden></pre>
+</main>
+
+<script>
+const GRADES=[
+  {k:'ultra',n:'Ultra 94'},{k:'super',n:'Super Clean 91'},{k:'plus',n:'Midgrade (Plus)'},
+  {k:'regular',n:'Regular (E-10)'},{k:'diesel',n:'Diesel'}];
+const TANKS=[{k:'ultra',n:'Ultra 94'},{k:'regular',n:'Regular'},{k:'diesel',n:'Diesel'}];
+
+const blank=()=>({
+  date:new Date().toISOString().slice(0,10),
+  blend:{plus:'29',super:'57'},
+  pumps:Object.fromEntries(GRADES.map(g=>[g.k,[{y:'',t:''}]])),
+  tank:Object.fromEntries(TANKS.map(t=>[t.k,{total:'',close:'',bf:''}])),
+  ov:{}
+});
+let S=blank();
+
+const num=v=>{const n=parseFloat(String(v==null?'':v).replace(/,/g,''));return isNaN(n)?0:n};
+const has=v=>v!=null&&String(v).trim()!=='';
+const rnd=n=>Math.round(n*100)/100;
+const fmt=n=>rnd(n).toLocaleString(undefined,{maximumFractionDigits:2});
+const sgn=n=>(n>0?'+':'')+fmt(n);
+
+/* ---------- storage (works inside Claude; skipped elsewhere) ---------- */
+async function save(){try{await window.storage.set('dipbook-state',JSON.stringify(S),false)}catch(e){}}
+async function load(){
+  try{
+    const r=await window.storage.get('dipbook-state',false);
+    if(r&&r.value){
+      const o=JSON.parse(r.value),b=blank();
+      S={date:o.date||b.date,blend:Object.assign(b.blend,o.blend),pumps:b.pumps,tank:b.tank,ov:o.ov||{}};
+      GRADES.forEach(g=>{const p=o.pumps&&o.pumps[g.k]&&o.pumps[g.k][0];if(p)S.pumps[g.k]=[{y:p.y||'',t:p.t||''}]});
+      TANKS.forEach(t=>{const d=o.tank&&o.tank[t.k];if(d)Object.assign(S.tank[t.k],{total:d.total||'',close:d.close||'',bf:d.bf||''})});
+    }
+  }catch(e){}
+}
+
+/* ---------- auto-filled but editable boxes ---------- */
+const ovBox=(id,label)=>`<input class="auto" data-ov="${id}" aria-label="${label}" inputmode="text" autocomplete="off">`;
+function eff(id,auto,signed){
+  const el=document.querySelector(`[data-ov="${id}"]`);
+  const o=S.ov[id],over=has(o);
+  let val=over?num(o):auto;
+  if(el){
+    el.classList.toggle('edited',over);
+    if(document.activeElement!==el) el.value=over?o:(auto===null?'':String(rnd(auto)));
+    el.classList.toggle('neg',!!signed&&val!==null&&val<0);
+    el.classList.toggle('pos',!!signed&&val!==null&&val>0);
+  }
+  return val;
+}
+
+/* ---------- pumps ---------- */
+function renderPumps(){
+  const box=document.getElementById('pumps');box.innerHTML='';
+  GRADES.forEach(g=>{
+    const p=S.pumps[g.k][0];
+    const c=document.createElement('div');c.className='card';
+    c.innerHTML=`<h3><span>${g.n}</span></h3>
+      <div class="prow head"><span>Yesterday</span><span>Today</span><span>Sold</span></div>
+      <div class="prow"><input aria-label="${g.n} yesterday" inputmode="decimal" value="${p.y}" data-f="y">
+        <input aria-label="${g.n} today" inputmode="decimal" value="${p.t}" data-f="t">
+        ${ovBox('sold-'+g.k,g.n+' sold')}</div>`;
+    c.querySelectorAll('input[data-f]').forEach(inp=>inp.addEventListener('input',()=>{p[inp.dataset.f]=inp.value;calc()}));
+    box.appendChild(c);
+  });
+}
+
+/* ---------- tank table ---------- */
+function renderTank(){
+  const rows=[
+    ['1. Total Quantity','<small>Opening + Purchases</small>','in','total'],
+    ['2. Total Sales','<small>From Sales Above</small>','ov','l5'],
+    ['3. Balance','<small>1 − 2</small>','ov','l6'],
+    ['4. Closing Inventory','<small>Today\'s Tank Dip</small>','in','close'],
+    ['5. Over / Short','<small>4 − 3</small>','ov','l8'],
+    ['6. Brought Forward','<small>Yesterday\'s Line 7</small>','in','bf'],
+    ['7. Cumulative +/−','<small>5 + 6</small>','ov','l10']];
+  const tb=document.getElementById('tank');tb.innerHTML='';
+  rows.forEach(([label,hint,type,key])=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${label}${hint}</td>`+TANKS.map(t=>type==='in'
+      ?`<td><input inputmode="text" autocomplete="off" aria-label="${label} ${t.n}" data-t="${t.k}" data-f="${key}" value="${S.tank[t.k][key]||''}"></td>`
+      :`<td>${ovBox(key+'-'+t.k,label+' '+t.n)}</td>`).join('');
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll('input[data-f]').forEach(i=>i.addEventListener('input',()=>{S.tank[i.dataset.t][i.dataset.f]=i.value;calc()}));
+}
+
+/* ---------- calculation ---------- */
+let R={sold:{},grand:{},tank:{}};
+function calc(){
+  const sold={};
+  GRADES.forEach(g=>{
+    const p=S.pumps[g.k][0];
+    const auto=(has(p.t)||has(p.y))?num(p.t)-num(p.y):null;
+    const v=eff('sold-'+g.k,auto,false);
+    sold[g.k]=v===null?0:v;
+  });
+  const plusU=Math.floor(sold.plus*num(S.blend.plus)/100+1e-9),plusR=sold.plus-plusU;
+  const supU=Math.floor(sold.super*num(S.blend.super)/100+1e-9),supR=sold.super-supU;
+  const grand={
+    ultra:eff('grand-ultra',sold.ultra+plusU+supU)||0,
+    regular:eff('grand-regular',sold.regular+plusR+supR)||0,
+    diesel:eff('grand-diesel',sold.diesel)||0};
+  R={sold,grand,tank:{}};
+
+  const warns=[];
+  TANKS.forEach(t=>{
+    const d=S.tank[t.k];
+    const l4=num(d.total);
+    const l5=eff('l5-'+t.k,grand[t.k]);
+    const l6=eff('l6-'+t.k,l4-l5);
+    const l8=eff('l8-'+t.k,has(d.close)?num(d.close)-l6:null,true);
+    const l10=eff('l10-'+t.k,l8!==null?l8+num(d.bf):null,true);
+    R.tank[t.k]={l4,l5,l6,l8,l10};
+    if(l8!==null&&l8<-200)warns.push(`${t.n}: loss of ${fmt(-l8)} L today is over 200 L. Three days in a row means notifying Petro-Canada.`);
+  });
+  document.getElementById('warn').innerHTML=warns.map(w=>`<p class="note">${w}</p>`).join('');
+  save();
+}
+
+/* editable grey boxes */
+document.addEventListener('input',e=>{
+  const id=e.target.dataset&&e.target.dataset.ov;
+  if(id){S.ov[id]=e.target.value;calc()}
+});
+document.addEventListener('focusout',e=>{if(e.target.dataset&&e.target.dataset.ov)calc()});
+
+/* ---------- actions ---------- */
+function report(){
+  const L=['DIP BOOK','','SALES (LITRES)'];
+  GRADES.forEach(g=>L.push(`${g.n}: ${fmt(R.sold[g.k])}`));
+  L.push('',`Grand Total - Ultra 94: ${fmt(R.grand.ultra)} | Regular: ${fmt(R.grand.regular)} | Diesel: ${fmt(R.grand.diesel)}`,'','TANKS');
+  TANKS.forEach(t=>{const r=R.tank[t.k];
+    L.push(`${t.n}: Total ${fmt(r.l4)} − Sales ${fmt(r.l5)} = Balance ${fmt(r.l6)}`+(r.l8===null?'':` | Closing ${fmt(num(S.tank[t.k].close))} | Over/Short ${sgn(r.l8)} | Cumulative ${r.l10===null?'':sgn(r.l10)}`))});
+  return L.join('\n');
+}
+document.getElementById('report').onclick=async()=>{
+  const o=document.getElementById('out'),btn=document.getElementById('report');
+  o.textContent=report();o.hidden=false;
+  try{await navigator.clipboard.writeText(o.textContent);btn.textContent='Copied';setTimeout(()=>btn.textContent='Summary',1500)}catch(e){}
+};
+document.getElementById('reset').onclick=()=>{if(confirm('Clear everything?')){S=blank();init()}};
+
+function init(){
+  document.getElementById('bPlus').value=S.blend.plus;
+  document.getElementById('bSuper').value=S.blend.super;
+  renderPumps();renderTank();calc();document.getElementById('out').hidden=true;
+}
+document.getElementById('bPlus').addEventListener('input',e=>{S.blend.plus=e.target.value;calc()});
+document.getElementById('bSuper').addEventListener('input',e=>{S.blend.super=e.target.value;calc()});
+init();
+load().then(init);
+</script>
+</body>
+</html>
