@@ -71,12 +71,12 @@ pre{white-space:pre-wrap;background:var(--card);border:1px solid var(--line);bor
 <section>
   <h2>2. Sales</h2>
   <div class="blend card">
+    <div><label for="bPlus">Midgrade: % Ultra 94</label><input id="bPlus" inputmode="decimal"></div>
     <div><label for="bSuper">Super Clean 91: % Ultra 94</label><input id="bSuper" inputmode="decimal"></div>
-<div><label for="bPlus">Midgrade: % Ultra 94</label><input id="bPlus" inputmode="decimal"></div>
   </div>
   <table class="mix">
-    <thead><tr><th>Grade</th><th>Litres</th></tr></thead>
-    <tbody id="mix"><tr><td>Ultra 94</td><td><input class="auto" data-ov="grand-ultra" aria-label="Ultra 94 grand total" inputmode="text" autocomplete="off"></td></tr><tr><td>Regular (E-10)</td><td><input class="auto" data-ov="grand-regular" aria-label="Regular grand total" inputmode="text" autocomplete="off"></td></tr><tr><td>Diesel</td><td><input class="auto" data-ov="grand-diesel" aria-label="Diesel grand total" inputmode="text" autocomplete="off"></td></tr></tbody>
+    <thead><tr><th>Grade</th><th>Ultra 94</th><th>Regular</th></tr></thead>
+    <tbody id="mix"><tr><td>Midgrade (Plus)</td><td><input class="auto" data-ov="split-plus-u" aria-label="Midgrade Ultra 94" inputmode="text" autocomplete="off"></td><td><input class="auto" data-ov="split-plus-r" aria-label="Midgrade Regular" inputmode="text" autocomplete="off"></td></tr><tr><td>Super Clean 91</td><td><input class="auto" data-ov="split-super-u" aria-label="Super Clean 91 Ultra 94" inputmode="text" autocomplete="off"></td><td><input class="auto" data-ov="split-super-r" aria-label="Super Clean 91 Regular" inputmode="text" autocomplete="off"></td></tr><tr class="key"><td>Grand Total</td><td><input class="auto" data-ov="grand-ultra" aria-label="Ultra 94 grand total" inputmode="text" autocomplete="off"></td><td><input class="auto" data-ov="grand-regular" aria-label="Regular grand total" inputmode="text" autocomplete="off"></td></tr><tr><td>Diesel</td><td colspan="2"><input class="auto" data-ov="grand-diesel" aria-label="Diesel grand total" inputmode="text" autocomplete="off"></td></tr></tbody>
   </table>
 </section>
 
@@ -170,8 +170,7 @@ function renderTank(){
     ['3. Balance','<small>1 − 2</small>','ov','l6'],
     ['4. Closing Inventory','<small>Today\'s Tank Dip</small>','in','close'],
     ['5. Over / Short','<small>4 − 3</small>','ov','l8'],
-    ['6. Brought Forward','<small>Yesterday\'s Line 7</small>','in','bf'],
-    ['7. Cumulative +/−','<small>5 + 6</small>','ov','l10']];
+    ['6. Cumulative +/−','<small>5 + 6</small>','ov','l10']];
   const tb=document.getElementById('tank');tb.innerHTML='';
   rows.forEach(([label,hint,type,key])=>{
     const tr=document.createElement('tr');
