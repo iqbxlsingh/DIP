@@ -48,8 +48,6 @@ td small{display:block;color:var(--muted);font-weight:400;font-size:.72rem}
 td input{padding:7px 5px;text-align:right}
 tr.key td{font-weight:700}
 .neg{color:var(--loss)} .pos{color:var(--gain)}
-input.auto{background:var(--calc);font-weight:600}
-input.edited{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
 input.neg{color:var(--loss)} input.pos{color:var(--gain)}
 .blend{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .blend label{font-size:.85rem;color:var(--muted)}
@@ -69,14 +67,14 @@ pre{white-space:pre-wrap;background:var(--card);border:1px solid var(--line);bor
 </section>
 
 <section>
-  <h2>2. Sales</h2>
+  <h2>2. Sales After Blend Split</h2>
   <div class="blend card">
     <div><label for="bPlus">Midgrade: % Ultra 94</label><input id="bPlus" inputmode="decimal"></div>
     <div><label for="bSuper">Super Clean 91: % Ultra 94</label><input id="bSuper" inputmode="decimal"></div>
   </div>
   <table class="mix">
     <thead><tr><th>Grade</th><th>Ultra 94</th><th>Regular</th></tr></thead>
-    <tbody id="mix"><tr><td>Midgrade (Plus)</td><td><input class="auto" data-ov="split-plus-u" aria-label="Midgrade Ultra 94" inputmode="text" autocomplete="off"></td><td><input class="auto" data-ov="split-plus-r" aria-label="Midgrade Regular" inputmode="text" autocomplete="off"></td></tr><tr><td>Super Clean 91</td><td><input class="auto" data-ov="split-super-u" aria-label="Super Clean 91 Ultra 94" inputmode="text" autocomplete="off"></td><td><input class="auto" data-ov="split-super-r" aria-label="Super Clean 91 Regular" inputmode="text" autocomplete="off"></td></tr><tr class="key"><td>Grand Total</td><td><input class="auto" data-ov="grand-ultra" aria-label="Ultra 94 grand total" inputmode="text" autocomplete="off"></td><td><input class="auto" data-ov="grand-regular" aria-label="Regular grand total" inputmode="text" autocomplete="off"></td></tr><tr><td>Diesel</td><td colspan="2"><input class="auto" data-ov="grand-diesel" aria-label="Diesel grand total" inputmode="text" autocomplete="off"></td></tr></tbody>
+    <tbody id="mix"><tr><td>Midgrade (Plus)</td><td><input class="auto" data-ov="split-plus-u" aria-label="Midgrade Ultra 94" inputmode="text" autocomplete="off"></td><td><input class="auto" data-ov="split-plus-r" aria-label="Midgrade Regular" inputmode="text" autocomplete="off"></td></tr><tr><td>Super Clean 91</td><td><input class="auto" data-ov="split-super-u" aria-label="Super Clean 91 Ultra 94" inputmode="text" autocomplete="off"></td><td><input class="auto" data-ov="split-super-r" aria-label="Super Clean 91 Regular" inputmode="text" autocomplete="off"></td></tr><tr><td><b>Grand Total</b></td><td><input class="auto" data-ov="grand-ultra" aria-label="Ultra 94 grand total" inputmode="text" autocomplete="off"></td><td><input class="auto" data-ov="grand-regular" aria-label="Regular grand total" inputmode="text" autocomplete="off"></td></tr><tr><td>Diesel</td><td colspan="2"><input class="auto" data-ov="grand-diesel" aria-label="Diesel grand total" inputmode="text" autocomplete="off"></td></tr></tbody>
   </table>
 </section>
 
@@ -118,12 +116,12 @@ const fmt=n=>rnd(n).toLocaleString(undefined,{maximumFractionDigits:2});
 const sgn=n=>(n>0?'+':'')+fmt(n);
 
 /* ---------- storage (works inside Claude; skipped elsewhere) ---------- */
-async function save(){try{await window.storage.set('dipbook-state',JSON.stringify(S),false)}catch(e){}}
+async function save(){try{localStorage.setItem('dipbook-state',JSON.stringify(S))}catch(e){}}
 async function load(){
   try{
-    const r=await window.storage.get('dipbook-state',false);
-    if(r&&r.value){
-      const o=JSON.parse(r.value),b=blank();
+    const raw=localStorage.getItem('dipbook-state');
+    if(raw){
+      const o=JSON.parse(raw),b=blank();
       S={date:o.date||b.date,blend:Object.assign(b.blend,o.blend),pumps:b.pumps,tank:b.tank,ov:o.ov||{}};
       GRADES.forEach(g=>{const p=o.pumps&&o.pumps[g.k]&&o.pumps[g.k][0];if(p)S.pumps[g.k]=[{y:p.y||'',t:p.t||''}]});
       TANKS.forEach(t=>{const d=o.tank&&o.tank[t.k];if(d)Object.assign(S.tank[t.k],{total:d.total||'',close:d.close||'',bf:d.bf||''})});
@@ -139,7 +137,7 @@ function eff(id,auto,signed){
   let val=over?num(o):auto;
   if(el){
     el.classList.toggle('edited',over);
-    if(document.activeElement!==el) el.value=over?o:(auto===null?'':String(rnd(auto)));
+    if(document.activeElement!==el) el.value=over?o:(auto===null||rnd(auto)===0?'':String(rnd(auto)));
     el.classList.toggle('neg',!!signed&&val!==null&&val<0);
     el.classList.toggle('pos',!!signed&&val!==null&&val>0);
   }
@@ -192,8 +190,12 @@ function calc(){
     const v=eff('sold-'+g.k,auto,false);
     sold[g.k]=v===null?0:v;
   });
-  const plusU=Math.floor(sold.plus*num(S.blend.plus)/100+1e-9),plusR=sold.plus-plusU;
-  const supU=Math.floor(sold.super*num(S.blend.super)/100+1e-9),supR=sold.super-supU;
+  const pU0=Math.floor(sold.plus*num(S.blend.plus)/100+1e-9);
+  const plusU=eff('split-plus-u',pU0);
+  const plusR=eff('split-plus-r',sold.plus-plusU);
+  const sU0=Math.floor(sold.super*num(S.blend.super)/100+1e-9);
+  const supU=eff('split-super-u',sU0);
+  const supR=eff('split-super-r',sold.super-supU);
   const grand={
     ultra:eff('grand-ultra',sold.ultra+plusU+supU)||0,
     regular:eff('grand-regular',sold.regular+plusR+supR)||0,
@@ -236,7 +238,7 @@ document.getElementById('report').onclick=async()=>{
   o.textContent=report();o.hidden=false;
   try{await navigator.clipboard.writeText(o.textContent);btn.textContent='Copied';setTimeout(()=>btn.textContent='Summary',1500)}catch(e){}
 };
-document.getElementById('reset').onclick=()=>{if(confirm('Clear everything?')){S=blank();init()}};
+document.getElementById('reset').onclick=()=>{S=blank();init();window.scrollTo(0,0)};
 
 function init(){
   document.getElementById('bPlus').value=S.blend.plus;
